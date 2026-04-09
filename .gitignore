@@ -34,9 +34,6 @@ dist/
 build/
 .env
 
-# Go
-go.sum
-
 # Rust
 Cargo.lock
 
