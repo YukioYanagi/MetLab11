@@ -31,6 +31,7 @@ jobs:
         working-directory: go-app
         run: |
           go mod download
+          go mod tidy
           go test ./...
 
       - name: Set up Rust
