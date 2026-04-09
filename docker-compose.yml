@@ -1,0 +1,119 @@
+version: '3.8'
+
+services:
+  python-app:
+    build: ./python-app
+    container_name: python-app
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+    environment:
+      # Server configuration
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DEBUG=false
+      
+      # Service configuration
+      - SERVICE_NAME=python-app
+      - SERVICE_VERSION=1.0.0
+      - SERVICE_URL=http://python-app:8000
+      
+      # Dependency configuration
+      - GO_SERVICE_URL=http://go-app:8080
+      - RUST_SERVICE_URL=http://rust-app:9000
+      
+      # Healthcheck configuration
+      - HEALTHCHECK_TIMEOUT=5
+      - ENABLE_DEPENDENCY_CHECKS=true
+      
+      # Logging configuration
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - go-app
+      - rust-app
+
+  go-app:
+    build: ./go-app
+    container_name: go-app
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    environment:
+      # Server configuration
+      - HOST=0.0.0.0
+      - PORT=8080
+      - DEBUG=false
+      
+      # Service configuration
+      - SERVICE_NAME=go-app
+      - SERVICE_VERSION=1.0.0
+      - SERVICE_URL=http://go-app:8080
+      
+      # Dependency configuration
+      - PYTHON_SERVICE_URL=http://python-app:8000
+      - RUST_SERVICE_URL=http://rust-app:9000
+      
+      # Healthcheck configuration
+      - HEALTHCHECK_TIMEOUT=5
+      - ENABLE_DEPENDENCY_CHECKS=true
+      
+      # Logging configuration
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - rust-app
+
+  rust-app:
+    build: ./rust-app
+    container_name: rust-app
+    ports:
+      - "9000:9000"
+    networks:
+      - app-network
+    environment:
+      # Server configuration
+      - HOST=0.0.0.0
+      - PORT=9000
+      - DEBUG=false
+      
+      # Service configuration
+      - SERVICE_NAME=rust-app
+      - SERVICE_VERSION=1.0.0
+      - SERVICE_URL=http://rust-app:9000
+      
+      # Dependency configuration
+      - PYTHON_SERVICE_URL=http://python-app:8000
+      - GO_SERVICE_URL=http://go-app:8080
+      
+      # Healthcheck configuration
+      - HEALTHCHECK_TIMEOUT=5
+      - ENABLE_DEPENDENCY_CHECKS=true
+      
+      # Logging configuration
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9000/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  app-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
